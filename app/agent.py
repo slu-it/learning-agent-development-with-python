@@ -1,8 +1,6 @@
-"""The message delivery agent, wired up to a local Ollama model.
+"""The message delivery agent, wired up to a local model.
 
-This module configures the OpenAI Agents SDK to talk to Ollama instead of OpenAI.
-Ollama exposes an OpenAI-compatible endpoint at http://localhost:11434/v1,
-so we point an AsyncOpenAI client at it and wrap it in an OpenAIChatCompletionsModel.
+This module configures the OpenAI Agents SDK to talk to a local model instead of OpenAI.
 """
 
 import os
@@ -15,24 +13,24 @@ from app.http import _log_exchange
 from app.tools import get_phone_number_of_contact, send_whatsapp_message, send_sms_message, \
     get_email_address_of_contact, send_email_message
 
-# --- Local model configuration (Ollama via its OpenAI-compatible endpoint) ---
+# Local model configuration
 
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma4")
+MODEL_BASE_URL = os.getenv("MODEL_BASE_URL", "http://localhost:9000/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "gemma-4")
 
 # HTTP client with optional logging setup
 _http_client = None
 if os.getenv("HTTP_TRACE") == "true":
     _http_client = httpx.AsyncClient(event_hooks={"response": [_log_exchange]})
 
-# Ollama ignores the API key, but the OpenAI client requires a non-empty value.
-_client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama", http_client=_http_client)
+# Local models gnore the API key, but the OpenAI client requires a non-empty value.
+_client = AsyncOpenAI(base_url=MODEL_BASE_URL, api_key="local-model", http_client=_http_client)
 
 # Tracing tries to send data to OpenAI's servers. Disable it for a fully local,
 # offline setup (otherwise the SDK looks for an OPENAI_API_KEY).
 set_tracing_disabled(True)
 
-_model = OpenAIChatCompletionsModel(model=OLLAMA_MODEL, openai_client=_client)
+_model = OpenAIChatCompletionsModel(model=MODEL_NAME, openai_client=_client)
 
 # What each tool does and what arguments it takes lives in the tool docstrings
 # in app/tools.py; the SDK sends that to the model automatically. These
