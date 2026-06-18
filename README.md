@@ -44,6 +44,12 @@ uv run uvicorn app.server:app --reload
 
 The server listens on http://localhost:8000.
 
+If you are interested in the interaction with the model, you can enable HTTP trace logging for the client.
+
+```bash
+HTTP_TRACE=true uv run uvicorn app.server:app --reload
+```
+
 ## Use
 
 Send a query as a POST with a JSON body of the form `{"query": "..."}`:

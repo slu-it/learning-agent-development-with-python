@@ -7,9 +7,11 @@ so we point an AsyncOpenAI client at it and wrap it in an OpenAIChatCompletionsM
 
 import os
 
+import httpx
 from agents import Agent, OpenAIChatCompletionsModel, Runner, set_tracing_disabled
 from openai import AsyncOpenAI
 
+from app.http import _log_exchange
 from app.tools import get_phone_number_of_contact, send_whatsapp_message, send_sms_message, \
     get_email_address_of_contact, send_email_message
 
@@ -18,8 +20,13 @@ from app.tools import get_phone_number_of_contact, send_whatsapp_message, send_s
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma4")
 
+# HTTP client with optional logging setup
+_http_client = None
+if os.getenv("HTTP_TRACE") == "true":
+    _http_client = httpx.AsyncClient(event_hooks={"response": [_log_exchange]})
+
 # Ollama ignores the API key, but the OpenAI client requires a non-empty value.
-_client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
+_client = AsyncOpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama", http_client=_http_client)
 
 # Tracing tries to send data to OpenAI's servers. Disable it for a fully local,
 # offline setup (otherwise the SDK looks for an OPENAI_API_KEY).
